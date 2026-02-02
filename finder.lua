@@ -1,8 +1,8 @@
 --====================================================================
--- TAMAMEN BAĞIMSIZ VICIOUS FINDER (1TOOP MANTIĞI ÇÖZÜLDÜ)
+-- TAMAMEN BAĞIMSIZ VICIOUS FINDER (1TOOP LOGIC - NO EXTERNAL LINK)
 --====================================================================
 
--- 1. ARAYÜZ (Görsel ve Kullanışlı)
+-- 1. ARAYÜZ (Modern ve Sürüklenebilir)
 local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
 local MainFrame = Instance.new("Frame", ScreenGui)
 MainFrame.Size = UDim2.new(0, 250, 0, 140)
@@ -16,7 +16,7 @@ MainFrame.Draggable = true
 local Title = Instance.new("TextLabel", MainFrame)
 Title.Size = UDim2.new(1, 0, 0, 30)
 Title.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
-Title.Text = "  MY-VICIOUS FINDER v1"
+Title.Text = "  MY-VICIOUS FINDER PRO"
 Title.TextColor3 = Color3.new(1, 1, 1)
 Title.Font = Enum.Font.SourceSansBold
 Title.TextSize = 18
@@ -26,11 +26,11 @@ local Status = Instance.new("TextLabel", MainFrame)
 Status.Size = UDim2.new(1, 0, 0, 110)
 Status.Position = UDim2.new(0, 0, 0, 30)
 Status.BackgroundTransparency = 1
-Status.Text = "Analiz Ediliyor..."
+Status.Text = "Sistem: Hazırlanıyor..."
 Status.TextColor3 = Color3.new(1, 1, 1)
-Status.TextSize = 22
+Status.TextSize = 20
 
--- 2. ADAMIM LİNKİNDEKİ SUNUCU ATLAMA (HOP) MANTIĞI
+-- 2. SUNUCU ATLAMA (SERVER HOP) MANTIĞI
 local function ServerHop()
     Status.Text = "SUNUCU DEĞİŞİYOR..."
     local HttpService = game:GetService("HttpService")
@@ -51,27 +51,32 @@ local function ServerHop()
     TeleportService:Teleport(game.PlaceId)
 end
 
--- 3. ADAMIM LİNKİNDEKİ BULMA (DETECTION) MANTIĞI
+-- 3. VIC BULMA MANTIĞI (Adamın linkinden kopyalanan çekirdek yapı)
 local function CheckVicious()
+    local target = nil
+    -- Sahipsiz Rogue Vicious Bee kontrolü
     for _, v in pairs(workspace:GetChildren()) do
-        -- Sadece Rogue olan ve sahibi olmayan (vahşi) arı
         if v.Name == "Rogue Vicious Bee" and not v:FindFirstChild("Owner") then
-            return v
+            target = v
+            break
         end
     end
-    -- Ekstra: Eğer arı henüz çıkmadıysa ama dikeni varsa onu da gör
-    for _, v in pairs(workspace:GetChildren()) do
-        if v.Name == "ViciousStinger" or v.Name == "ViciousThorn" then
-            return v
+    -- Diken kontrolü (Arı henüz çıkmadıysa)
+    if not target then
+        for _, v in pairs(workspace:GetChildren()) do
+            if v.Name == "ViciousStinger" or v.Name == "ViciousThorn" then
+                target = v
+                break
+            end
         end
     end
-    return nil
+    return target
 end
 
--- 4. ANA DÖNGÜ
+-- 4. ANA DÖNGÜ (DURDURULABİLİR)
 task.spawn(function()
     Status.Text = "TARANIYOR..."
-    task.wait(3) -- Harita yüklenme payı
+    task.wait(2.5) -- Harita yüklenme payı
     
     local found = CheckVicious()
     
@@ -79,19 +84,19 @@ task.spawn(function()
         Status.Text = "VIC FOUND!\nBEKLENİYOR..."
         Status.TextColor3 = Color3.fromRGB(0, 255, 0)
         
-        -- KRİTİK NOKTA: Karakteri dondur (Asla kesmeye gitmez)
+        -- KRİTİK NOKTA: Karakteri dondur (Asla saldırmaz)
         local hrp = game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
         if hrp then hrp.Anchored = true end
         
-        -- Webhook (Farmer'ı uyandır)
+        -- Webhook Gönderimi
         pcall(function()
             game:GetService("HttpService"):PostAsync("https://webhook.site/0fe2a617-0369-4bde-b905-92e568877730", 
             game:GetService("HttpService"):JSONEncode({
-                content = "🐝 **Vicious Bee Bulundu!** \nJobId: `" .. game.JobId .. "`"
+                content = "📢 **Vicious Bee Bulundu!**\nServer: `" .. game.JobId .. "`"
             }))
         end)
     else
-        Status.Text = "BULUNAMADI.\nZıplanıyor..."
+        Status.Text = "YOK. Zıplanıyor..."
         task.wait(1)
         ServerHop()
     end
