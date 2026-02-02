@@ -1,52 +1,57 @@
 --====================================================================
--- VICIOUS FINDER PRO (HOP-BASED)
+-- FINDER (GÖZCÜ) - PRO MOBILE VERSION
 --====================================================================
-
 local WEBHOOK_URL = "https://webhook.site/0fe2a617-0369-4bde-b905-92e568877730"
-local HttpService = game:GetService("HttpService")
+
+-- Kütüphaneleri Yükle
+local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/MMetinS/my-vicious/main/test4.lua"))()
+local fastHop = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/1toop/vichop/main/hop.lua"))() end
+
 local Players = game:GetService("Players")
 local lp = Players.LocalPlayer
 
--- Ekranın ortasında çalışıp çalışmadığını anlaman için küçük bir yazı
-local sg = Instance.new("ScreenGui", lp.PlayerGui)
-local txt = Instance.new("TextLabel", sg)
-txt.Size = UDim2.new(0, 200, 0, 50)
-txt.Position = UDim2.new(0.5, -100, 0.1, 0)
-txt.Text = "Vicious Gözcü Aktif..."
-txt.BackgroundColor3 = Color3.new(0, 0, 0)
-txt.TextColor3 = Color3.new(0, 1, 0)
+-- UI Oluştur
+local Window = library:CreateWindow("Vicious Finder", Vector2.new(340, 260))
+local Tab = Window:CreateTab("Gözcü Paneli")
 
--- TARAMA FONKSİYONU
-local function scan()
-    print("Vicious araniyor...")
-    task.wait(2)
-    
-    local found = false
-    -- Senin hop.lua içindeki mantığa göre en temiz arama
+local Status = Tab:CreateLabel("Durum: Taranıyor...")
+local FoundLabel = Tab:CreateLabel("Bulunan Rogue: 0")
+_G.TotalFound = _G.TotalFound or 0
+
+-- Tarama Fonksiyonu
+local function checkRogue()
+    local target = nil
     for _, v in ipairs(workspace:GetChildren()) do
+        -- Sadece Rogue olan ve sahibi olmayan (vahşi) arıyı bul
         if v.Name == "Rogue Vicious Bee" and not v:FindFirstChild("Owner") then
-            found = true
-            txt.Text = "BULDUM! Webhook Gidiyor..."
-            
-            pcall(function()
-                HttpService:PostAsync(WEBHOOK_URL, HttpService:JSONEncode({
-                    jobId = game.JobId,
-                    found = true,
-                    info = "Rogue Vicious Bee Bulundu!"
-                }))
-            end)
-            task.wait(15) -- Farmer'ın girmesi için bekle
+            target = v
             break
         end
     end
 
-    if not found then
-        txt.Text = "Bulunamadı, Yeni Sunucuya..."
+    if target then
+        _G.TotalFound = _G.TotalFound + 1
+        FoundLabel.Text = "Bulunan Rogue: " .. _G.TotalFound
+        Status.Text = "Durum: BULDUM! Farmer bekleniyor..."
+        
+        -- Webhook Gönder
+        pcall(function()
+            game:GetService("HttpService"):PostAsync(WEBHOOK_URL, game:GetService("HttpService"):JSONEncode({
+                jobId = game.JobId,
+                found = true,
+                server = #Players:GetPlayers() .. " oyuncu var"
+            }))
+        end)
+        
+        task.wait(25) -- Farmer'ın girmesi için güvenli süre
+    else
+        Status.Text = "Durum: Yok, yeni sunucuya..."
         task.wait(1)
-        -- Senin verdiğin profesyonel hop kodunu çalıştırır
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/1toop/vichop/main/hop.lua"))()
+        fastHop() -- Senin verdiğin hızlı hop
     end
 end
 
--- Başlat
-scan()
+task.spawn(function()
+    task.wait(2) -- Oyunun yüklenmesi için
+    checkRogue()
+end)
