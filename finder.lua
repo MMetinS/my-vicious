@@ -1,56 +1,55 @@
---====================================================================
--- PURE FINDER (GÖZCÜ) - SADECE BULUR VE HABER VERİR
---====================================================================
-local WEBHOOK_URL = "https://webhook.site/0fe2a617-0369-4bde-b905-92e568877730"
+-- [[ ALT HESAP - GÖNDERİCİ (V8 - Claimer Filtreli) ]] --
+local webhook_url = "SENİN_WEBHOOK_LİNKİN" -- Buraya kendi Webhook linkini yapıştır!
+local aranacak = "Spike" 
 
--- Basit UI
-local sg = Instance.new("ScreenGui", game:GetService("CoreGui"))
-local frame = Instance.new("Frame", sg)
-frame.Size = UDim2.new(0, 200, 0, 60)
-frame.Position = UDim2.new(0.5, -100, 0.1, 0)
-frame.BackgroundColor3 = Color3.new(0,0,0)
-local label = Instance.new("TextLabel", frame)
-label.Size = UDim2.new(1,0,1,0)
-label.Text = "VICIOUS ARANIYOR..."
-label.TextColor3 = Color3.new(1,1,1)
+local Http = game:GetService("HttpService")
+local TPS = game:GetService("TeleportService")
+local Players = game:GetService("Players")
 
-local function ServerHop()
-    label.Text = "SUNUCU DEGISTIRILIYOR..."
-    local HttpService = game:GetService("HttpService")
-    local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100")).data
-    for _, s in ipairs(servers) do
-        if s.id ~= game.JobId and s.playing < (s.maxPlayers - 1) then
-            game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, s.id)
-            return
-        end
-    end
-end
-
-local function check()
-    for _, v in pairs(workspace:GetChildren()) do
-        -- Sahipsiz Rogue Vicious Bee kontrolü
-        if v.Name == "Rogue Vicious Bee" and not v:FindFirstChild("Owner") then
-            return v
-        end
-    end
-    return nil
-end
-
-task.spawn(function()
-    task.wait(3)
-    local vic = check()
-    if vic then
-        label.Text = "BULDUM! WEBHOOK ATILDI."
-        -- Dondur
-        game.Players.LocalPlayer.Character.HumanoidRootPart.Anchored = true
-        
-        -- Webhook'a Join Kodu Atma
-        local joinCode = 'game:GetService("TeleportService"):TeleportToPlaceInstance('..game.PlaceId..', "'..game.JobId..'")'
-        game:GetService("HttpService"):PostAsync(WEBHOOK_URL, game:GetService("HttpService"):JSONEncode({
-            content = "🐝 **Vicious Bee Bulundu!**\n\n**Join Kodu (Farmer için):**\n```lua\n"..joinCode.."\n```"
-        }))
-    else
-        task.wait(1)
-        ServerHop()
-    end
+game:GetService("GuiService").ErrorMessageChanged:Connect(function()
+    wait(0.5); TPS:Teleport(game.PlaceId, Players.LocalPlayer)
 end)
+
+local function ViciousBul()
+    for _, v in pairs(workspace:GetDescendants()) do
+        if (string.find(v.Name, "Spike") or (string.find(v.Name, "Vicious") and v:FindFirstChild("Humanoid"))) then
+            -- "Claimer" yazan sahte şeyleri ve oyuncu eşyalarını eliyoruz
+            if not v:IsDescendantOf(Players) and not string.find(v.Name, "Claimer") and not (v.Parent and v.Parent.Name == "Bees") then
+                return true
+            end
+        end
+    end
+    return false
+end
+
+local function ServerDegistir()
+    local url = "https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100"
+    local s, r = pcall(function() return game:HttpGet(url) end)
+    if s then
+        local d = Http:JSONDecode(r).data
+        for i=1,15 do 
+            local sv = d[math.random(1,#d)]
+            if sv and sv.playing > 0 and (sv.maxPlayers-sv.playing)>=2 and sv.id~=game.JobId then
+                TPS:TeleportToPlaceInstance(game.PlaceId, sv.id, Players.LocalPlayer); return
+            end
+        end
+    end
+    TPS:Teleport(game.PlaceId, Players.LocalPlayer)
+end
+
+if not game:IsLoaded() then game.Loaded:Wait() end
+wait(3)
+
+if ViciousBul() then
+    local veri = {
+        ["content"] = "🎯 **HEDEF KİLİTLENDİ!**\nSECRET_ID:" .. game.JobId .. "\n(Main bekleniyor...)"
+    }
+    local req = (syn and syn.request) or request
+    if req then req({Url=webhook_url, Method="POST", Headers={["Content-Type"]="application/json"}, Body=Http:JSONEncode(veri)}) end
+
+    local VU = game:GetService("VirtualUser")
+    Players.LocalPlayer.Idled:Connect(function() VU:CaptureController(); VU:ClickButton2(Vector2.new()) end)
+    while true do wait(2) if not ViciousBul() then ServerDegistir(); break end end
+else
+    ServerDegistir()
+end
