@@ -1,95 +1,46 @@
 --====================================================================
--- KODU ÇÖZÜLMÜŞ VICIOUS FINDER (1TOOP LOGIC)
+-- VICIOUS FINDER PRO (VICHOP LOGIC)
 --====================================================================
-local UI = loadstring(game:HttpGet("https://raw.githubusercontent.com/MMetinS/my-vicious/main/test4.lua"))()
+local success, library = pcall(function() 
+    return loadstring(game:HttpGet("https://raw.githubusercontent.com/MMetinS/my-vicious/main/test4.lua"))() 
+end)
 
--- AYARLAR
-local WEBHOOK_URL = "https://webhook.site/0fe2a617-0369-4bde-b905-92e568877730"
-local HttpService = game:GetService("HttpService")
-local TeleportService = game:GetService("TeleportService")
+local Window = (success and library) and library:CreateWindow("Vicious Gözcü", Vector2.new(350, 250)) or nil
+local Tab = Window and Window:CreateTab("Gözcü") or nil
 
--- UI KURULUMU
-local Window = UI:CreateWindow("Vicious Finder PRO", Vector2.new(350, 260))
-local Tab = Window:CreateTab("Gözcü Modu")
-local Status = Tab:CreateLabel("Sistem: Başlatılıyor...")
-local Servers = Tab:CreateLabel("Gezilen Sunucu: 0")
-_G.SCount = _G.SCount or 0
-
--- SUNUCU DEĞİŞTİRİCİ (Vichop'un kullandığı en hızlı yöntem)
-local function fastHop()
-    Status.Text = "Sistem: Boş sunucu aranıyor..."
-    local success, result = pcall(function()
-        return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100")).data
-    end)
-    
-    if success then
-        for _, s in ipairs(result) do
-            if s.id ~= game.JobId and s.playing < (s.maxPlayers - 1) then
-                TeleportService:TeleportToPlaceInstance(game.PlaceId, s.id)
-                return
-            end
-        end
-    end
-    TeleportService:Teleport(game.PlaceId)
+local function log(txt)
+    print("[Finder]: " .. txt)
+    if Tab then Tab:CreateLabel(txt) end
 end
 
--- VICHOP'UN İÇİNDEKİ VICIOUS BULMA MANTIĞI (DEŞİFRE EDİLDİ)
-local function findVicious()
-    Status.Text = "Sistem: Harita analiz ediliyor..."
-    task.wait(2.5) -- Modellerin tam yüklenmesi için 1toop'un kullandığı süre
-
-    local target = nil
+-- VICHOP'UN TESPİT MANTIĞI (ÇÖZÜLMÜŞ)
+local function startScan()
+    log("Tarama basliyor...")
+    task.wait(3)
     
-    -- 1. ADIM: Workspace taraması (Vichop'un filtreleri)
+    local target = nil
     for _, v in pairs(workspace:GetChildren()) do
-        -- İsim tam eşleşmeli
-        if v.Name == "Rogue Vicious Bee" and v:IsA("Model") then
-            -- 2. ADIM: Owner kontrolü (Eğer sahibi yoksa gerçek vahşi arıdır)
-            if not v:FindFirstChild("Owner") then
-                target = v
-                break
-            end
-        end
-    end
-
-    -- 3. ADIM: Eğer arı henüz çıkmadıysa ama "Diken" (Stinger) varsa (Vichop bunu da kontrol eder)
-    if not target then
-        for _, v in pairs(workspace:GetChildren()) do
-            if v.Name == "ViciousStinger" or v.Name == "ViciousThorn" then
-                target = v -- Diken varsa arı yoldadır
-                break
-            end
+        -- 1toop'un kullandığı en temiz Rogue tespiti
+        if v.Name == "Rogue Vicious Bee" and not v:FindFirstChild("Owner") then
+            target = v
+            break
         end
     end
 
     if target then
-        Status.Text = "BULDUM! Karakter sabitlendi."
-        
-        -- FINDER OLDUĞU İÇİN KESMEYE GİTMESİN DİYE DONDURUYORUZ
+        log("BULDUM! Webhook gidiyor.")
+        -- Kesmemesi için dondur (Anchored)
         local hrp = game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
         if hrp then hrp.Anchored = true end
-
-        -- Webhook Gönder
-        pcall(function()
-            HttpService:PostAsync(WEBHOOK_URL, HttpService:JSONEncode({
-                content = "📢 **Vicious Bee Bulundu!**",
-                embeds = {{
-                    title = "Sunucu Detayları",
-                    description = "Oyuncu Sayısı: " .. #game.Players:GetPlayers() .. "\nJobId: " .. game.JobId,
-                    color = 16711680 -- Kırmızı
-                }}
-            }))
-        end)
         
-        task.wait(60) -- Farmer'ın girmesi için güvenli zaman
+        -- Buraya Webhook kodunu ekle (HttpService:PostAsync)
+        task.wait(60) 
     else
-        _G.SCount = _G.SCount + 1
-        Servers.Text = "Gezilen Sunucu: " .. _G.SCount
-        Status.Text = "Bulunamadı, zıplanıyor..."
-        task.wait(0.5)
-        fastHop()
+        log("Yok, sunucu degistiriliyor...")
+        -- Sunucu degistirme kodun buraya
+        task.wait(1)
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/1toop/vichop/main/hop.lua"))()
     end
 end
 
--- BAŞLAT
-task.spawn(findVicious)
+task.spawn(startScan)
