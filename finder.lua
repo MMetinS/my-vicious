@@ -1,5 +1,5 @@
 --==============================
--- ULTRA FAST FINDER
+-- FINDER (GÖZCÜ) - FULL VERSION
 --==============================
 local WEBHOOK_URL = "https://webhook.site/0fe2a617-0369-4bde-b905-92e568877730"
 
@@ -7,56 +7,61 @@ local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 local Found = false
 
--- BENZERSİZ SUNUCU BULMA FONKSİYONU
+-- FARKLI SUNUCU BULMA FONKSİYONU
 local function serverHop()
-    print("Yeni ve farkli bir sunucu araniyor...")
+    print("Mevcut sunucudan farkli bir yer araniyor...")
     local success, servers = pcall(function()
-        return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100")).data
+        local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+        return HttpService:JSONDecode(game:HttpGet(url)).data
     end)
 
-    if success then
+    if success and servers then
         for _, server in ipairs(servers) do
-            -- Dolu olmayan ve şu anki sunucudan farklı olanı seç
-            if server.playing < server.maxPlayers and server.id ~= game.JobId then
+            -- Mevcut sunucuyla aynı ID olmamalı ve doluluk oranı uygun olmalı
+            if server.id ~= game.JobId and server.playing < server.maxPlayers then
+                print("Yeni sunucu bulundu: " .. server.id)
                 TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id)
                 return
             end
         end
     end
-    -- Hata olursa rastgele teleport
+    -- Liste hatası durumunda klasik ışınlanma
     TeleportService:Teleport(game.PlaceId)
 end
 
 -- VERİ GÖNDERME
 local function sendData()
+    local payload = {
+        jobId = game.JobId,
+        placeId = game.PlaceId,
+        viciousFound = true,
+        timestamp = os.time()
+    }
     pcall(function()
-        HttpService:PostAsync(WEBHOOK_URL, HttpService:JSONEncode({
-            jobId = game.JobId,
-            placeId = game.PlaceId,
-            viciousFound = true
-        }))
+        HttpService:PostAsync(WEBHOOK_URL, HttpService:JSONEncode(payload))
     end)
 end
 
--- TARAMA MANTIK (SADECE 2 SANİYE SÜRER)
+-- ANA TARAMA DÖNGÜSÜ
 local function startSearch()
-    -- Mevcutları kontrol et
+    print("Vicious Bee taraniyor...")
+    task.wait(2) -- Nesnelerin yüklenmesi için kısa süre
+
     for _, v in pairs(workspace:GetDescendants()) do
         if v.Name:lower():find("vicious") then
             Found = true
+            print("Vicious Bee BULUNDU! Farmer'a haber veriliyor.")
             sendData()
-            print("Vicious Bulundu! Farmer'a haber verildi.")
-            task.wait(5) -- Farmer'ın girmesi için çok kısa bir bekleme
+            task.wait(10) -- Farmer'ın girmesi için bekleme süresi
             break
         end
     end
 
     if not Found then
-        print("Vicious yok, vakit kaybetmeden yeni sunucuya geciliyor...")
+        print("Vicious bulunamadi, yeni sunucuya geciliyor...")
         serverHop()
     end
 end
 
--- Script başladığı gibi tarasın
-task.wait(1) -- Dünyanın yüklenmesi için 1 sn bekleme yeterli
+-- Başlat
 startSearch()
