@@ -1,5 +1,5 @@
 --==============================
--- FINDER (GÖZCÜ) - FULL VERSION
+-- FINDER (GÖZCÜ) - ANTI-REJOIN VERSION
 --==============================
 local WEBHOOK_URL = "https://webhook.site/0fe2a617-0369-4bde-b905-92e568877730"
 
@@ -7,25 +7,37 @@ local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 local Found = false
 
--- FARKLI SUNUCU BULMA FONKSİYONU
+-- GELİŞMİŞ VE RASTGELE SERVER HOP
 local function serverHop()
     print("Mevcut sunucudan farkli bir yer araniyor...")
+    
     local success, servers = pcall(function()
-        local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+        -- Rastgelelik için Descending veya Ascending arasında geçiş yapabiliriz
+        local sortType = math.random(1, 2) == 1 and "Asc" or "Desc"
+        local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=".. sortType .."&limit=100"
         return HttpService:JSONDecode(game:HttpGet(url)).data
     end)
 
     if success and servers then
+        -- Sunucu listesini karıştır (Aynı sırayla denememesi için)
+        local availableServers = {}
         for _, server in ipairs(servers) do
-            -- Mevcut sunucuyla aynı ID olmamalı ve doluluk oranı uygun olmalı
             if server.id ~= game.JobId and server.playing < server.maxPlayers then
-                print("Yeni sunucu bulundu: " .. server.id)
-                TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id)
-                return
+                table.insert(availableServers, server.id)
             end
         end
+
+        if #availableServers > 0 then
+            -- Listeden rastgele bir sunucu seç
+            local targetId = availableServers[math.random(1, #availableServers)]
+            print("Yeni sunucu bulundu: " .. targetId)
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, targetId)
+            return
+        end
     end
-    -- Liste hatası durumunda klasik ışınlanma
+    
+    -- Eğer özel sunucu bulunamazsa standart teleport
+    warn("Liste hatasi, standart teleport deneniyor...")
     TeleportService:Teleport(game.PlaceId)
 end
 
@@ -45,23 +57,25 @@ end
 -- ANA TARAMA DÖNGÜSÜ
 local function startSearch()
     print("Vicious Bee taraniyor...")
-    task.wait(2) -- Nesnelerin yüklenmesi için kısa süre
+    
+    -- Nesnelerin tam yüklenmesi için 3 saniye idealdir
+    task.wait(3) 
 
     for _, v in pairs(workspace:GetDescendants()) do
         if v.Name:lower():find("vicious") then
             Found = true
-            print("Vicious Bee BULUNDU! Farmer'a haber veriliyor.")
+            print("Vicious Bee BULUNDU!")
             sendData()
-            task.wait(10) -- Farmer'ın girmesi için bekleme süresi
+            task.wait(15) -- Farmer'ın girmesi için biraz daha fazla süre
             break
         end
     end
 
     if not Found then
-        print("Vicious bulunamadi, yeni sunucuya geciliyor...")
+        print("Vicious bulunamadi, farkli bir sunucuya geciliyor...")
         serverHop()
     end
 end
 
--- Başlat
+-- Hata payını azaltmak için scripti başlat
 startSearch()
