@@ -1,81 +1,52 @@
 --====================================================================
--- VICIOUS HUNTER PRO - MOBILE OPTIMIZED
+-- VICIOUS FINDER PRO (HOP-BASED)
 --====================================================================
 
-local Players = game:GetService("Players")
+local WEBHOOK_URL = "https://webhook.site/0fe2a617-0369-4bde-b905-92e568877730"
 local HttpService = game:GetService("HttpService")
-local TeleportService = game:GetService("TeleportService")
+local Players = game:GetService("Players")
 local lp = Players.LocalPlayer
 
--- Webhook Linkin
-local WEBHOOK_URL = "https://webhook.site/0fe2a617-0369-4bde-b905-92e568877730"
+-- Ekranın ortasında çalışıp çalışmadığını anlaman için küçük bir yazı
+local sg = Instance.new("ScreenGui", lp.PlayerGui)
+local txt = Instance.new("TextLabel", sg)
+txt.Size = UDim2.new(0, 200, 0, 50)
+txt.Position = UDim2.new(0.5, -100, 0.1, 0)
+txt.Text = "Vicious Gözcü Aktif..."
+txt.BackgroundColor3 = Color3.new(0, 0, 0)
+txt.TextColor3 = Color3.new(0, 1, 0)
 
--- DOSYALARI ÇEK (Hata Korumalı)
-local success_ui, UI = pcall(function() return loadstring(game:HttpGet("https://raw.githubusercontent.com/MMetinS/my-vicious/main/test4.lua"))() end)
-local success_hop = pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/1toop/vichop/main/hop.lua"))() end)
-
--- STATS
-_G.ViciousFound = _G.ViciousFound or 0
-_G.ServersChecked = _G.ServersChecked or 0
-
--- ARAYÜZ KURULUMU
-if success_ui and type(UI) == "table" then
-    local Window = UI:CreateWindow("Vicious Finder Pro", Vector2.new(350, 250))
-    local Main = Window:CreateTab("Gözcü")
+-- TARAMA FONKSİYONU
+local function scan()
+    print("Vicious araniyor...")
+    task.wait(2)
     
-    local StatusLabel = Main:CreateLabel("Durum: Başlatılıyor...")
-    local FoundLabel = Main:CreateLabel("Bulunan: " .. _G.ViciousFound)
-    local ServerLabel = Main:CreateLabel("Sunucu: " .. _G.ServersChecked)
-
-    -- TARAMA MANTIĞI (vichop.lua'dan alınan yöntemle)
-    local function findRogue()
-        StatusLabel.Text = "Durum: Rogue Vicious Aranıyor..."
-        task.wait(2)
-        
-        local target = nil
-        -- Rogue Vicious tespiti için en kesin döngü
-        for _, v in ipairs(workspace:GetChildren()) do
-            if v.Name == "Rogue Vicious Bee" and v:IsA("Model") then
-                -- Kendi arımız olup olmadığını kontrol et (Owner yoksa vahşidir)
-                if not v:FindFirstChild("Owner") then
-                    target = v
-                    break
-                end
-            end
-        end
-
-        if target then
-            _G.ViciousFound = _G.ViciousFound + 1
-            FoundLabel.Text = "Bulunan: " .. _G.ViciousFound
-            StatusLabel.Text = "Durum: BULDUM! Webhook gönderiliyor..."
+    local found = false
+    -- Senin hop.lua içindeki mantığa göre en temiz arama
+    for _, v in ipairs(workspace:GetChildren()) do
+        if v.Name == "Rogue Vicious Bee" and not v:FindFirstChild("Owner") then
+            found = true
+            txt.Text = "BULDUM! Webhook Gidiyor..."
             
             pcall(function()
                 HttpService:PostAsync(WEBHOOK_URL, HttpService:JSONEncode({
                     jobId = game.JobId,
                     found = true,
-                    time = os.date("%X")
+                    info = "Rogue Vicious Bee Bulundu!"
                 }))
             end)
-            task.wait(20) -- Farmer için bekleme süresi
-        end
-        
-        -- Bulunsa da bulunmasa da hop yap (Döngü için)
-        _G.ServersChecked = _G.ServersChecked + 1
-        ServerLabel.Text = "Sunucu: " .. _G.ServersChecked
-        StatusLabel.Text = "Durum: Yeni Sunucuya Zıplanıyor..."
-        
-        -- Yeni paylaştığın hızlı hop'u tetikle
-        if success_hop then
-            -- vichop içindeki hop fonksiyonunu çağırır
-            pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/1toop/vichop/main/hop.lua"))() end)
-        else
-            -- Yedek hop sistemi
-            TeleportService:Teleport(game.PlaceId)
+            task.wait(15) -- Farmer'ın girmesi için bekle
+            break
         end
     end
 
-    task.spawn(findRogue)
-else
-    -- UI Yüklenmezse konsola hata bas ve basitçe çalış
-    warn("UI Library yuklenemedi, arka planda calisiyor...")
+    if not found then
+        txt.Text = "Bulunamadı, Yeni Sunucuya..."
+        task.wait(1)
+        -- Senin verdiğin profesyonel hop kodunu çalıştırır
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/1toop/vichop/main/hop.lua"))()
+    end
 end
+
+-- Başlat
+scan()
